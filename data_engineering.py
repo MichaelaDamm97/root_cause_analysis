@@ -14,7 +14,7 @@ def add_selected_table_columns_to_pql(datamodel: Datamodel, tables_to_include: l
         Returns a PQL query that includes the columns of the given tables. Datetime columns are added as 3 features (Weekday, Day, Month)
         input:
             datamodel(Datamodel) - the datamodel of the process
-            tables_to_include(list) - list with tables that should be cosidered, and columns to be excluded
+            tables_to_include(list) - list with tables to be cosidered, and columns to be excluded
         output:
             query with PQLColumns that includes the columns of the given tables
     '''
@@ -45,16 +45,18 @@ def add_selected_table_columns_to_pql(datamodel: Datamodel, tables_to_include: l
 
 def get_context_table(datamodel: Datamodel, case_key: dict, tables_to_include: list, additional_columns: dict = None, target: dict = None, filter: str = None):
     '''
-        Returns a pd.Dataframe with the casekey as index, and all columns of the 'selected_tables' without excluded_cols; with add_cols one can add additional columns with PQL statements as the target
-        Columns of type date are included as 2 columns with categories Month and Year
+        Returns a pd.Dataframe with the casekey as index, and all columns of the tables specified in tables_to_include without the excluded columns. 
+        Additional columns, as well as a data filter can be included.
+        Columns of type date are split into three columns with categories Weekday, Day and Month
         input:
             datamodel(Datamodel) - the datamodel of the process
-            case_key(['column_name','pql_statement']) - index of the table
-            selected_tables - list of names of tables whose columns should be included 
-            exlude_cols([table_name1.column_name1,table_name2.column_name2,...]) - list of names of columns to be excluded
-            add_cols([['column_name1','pql_statement1'],['column_name2','pql_statement2'],...]) - columns to be included in the table
+            case_key(dict) - index of the table
+            tables_to_include(list) - list with tables to be cosidered, and columns to be excluded 
+            additional_columns(dict) - additional columns to be included that are not in the tables_to_include
+            target(dict) - name and PQL statement of the target variable
+            filter(str) - PQL statement of data filter
         output:
-            pd.Dataframe with the casekey as index, all columns of selected tables, all columns defined in add_cols, without exlude_cols
+            pd.Dataframe with the casekey as index, all columns of tables_to_include (wo excluded columns) and additional columns filtered on specified filter
     '''
     #define variables
     query = PQL()
@@ -82,14 +84,16 @@ def get_context_table(datamodel: Datamodel, case_key: dict, tables_to_include: l
 
 def get_activity_count_table(datamodel: Datamodel, case_key: dict, activity_table:str, activity_name:str, filter: str = None):
     '''
-        Returns a pd.Dataframe with the casekey as index, each activity with counts as columns
+        Returns a pd.Dataframe with the casekey as index, and each activity with counts as columns. 
+        The data is filtered, if a filter is specified.
         input:
             datamodel(Datamodel) - the datamodel of the process
-            case_key(['column_name','pql_statement']) - index of the table
+            case_key(dict) - index of the table
             activity_table(str) - name of activity table in datamodel
             activity_name(str) - name of column with activity names
+            filter(str) - PQL statement of data filter  
         output:
-            pd.Dataframe with the casekey as index, each activity with counts as columns
+            pd.Dataframe with the casekey as index, and each activity with counts as columns
     '''
     #define variables
     query = PQL()
@@ -112,13 +116,15 @@ def get_activity_count_table(datamodel: Datamodel, case_key: dict, activity_tabl
 
 def get_mfeature_count_table(datamodel: Datamodel, case_key: dict, multiple_value_features: list, filter: str = None):
     '''
-        Returns a pd.Dataframe with the casekey as index and the column with an 1:N relationship to the case table one hot encoded with count as aggfunc
+        Returns a pd.Dataframe with the casekey as index and the feature with an 1:N relationship to the case table one hot encoded with count as aggfunc.
+        The data is filtered, if a filter is specified.
         input:
             datamodel(Datamodel) - the datamodel of the process
-            case_key(['column_name','pql_statement']) - index of the table
-            multi_val_feature(['column_name','pql_statement']) - column that should be one hot encoded
+            case_key(dict) - index of the table
+            multiple_value_features(list) - features that should be one hot encoded
+            filter(str) - PQL statement of data filter  
         output:
-            pd.Dataframe with the casekey as index and the column with an 1:N relationship to the case table one hot encoded with count as aggfunc
+            pd.Dataframe with the casekey as index and the feature with an 1:N relationship to the case table one hot encoded with count as aggfunc
     '''   
     #define variables
     query = PQL()
@@ -142,14 +148,14 @@ def get_mfeature_count_table(datamodel: Datamodel, case_key: dict, multiple_valu
 
 def get_days_between_table(datamodel: Datamodel, case_key: dict, events_days_between: dict, filter:str = None):
     '''
-        Returns a pd.Dataframe with the casekey as index and columns that include the days between different dates
+        Returns a pd.Dataframe with the casekey as index and features that include the work days (Mo-Fr) between different each pair of events specified
         input:
             datamodel(Datamodel) - the datamodel of the process
             case_key(dict) - index of the table
             events_days_between(dict) - dates for which the days between are calculated
             filter(str) - filter for the data
         output:
-            pd.Dataframe with the casekey as index and the days between every event as a feature
+            pd.Dataframe with the casekey as index and the work days (Mo-Fr) between every event as a feature
     ''' 
     #define variables
     query = PQL()
@@ -173,7 +179,7 @@ def get_days_between_table(datamodel: Datamodel, case_key: dict, events_days_bet
 
 def add_delay_indicator(input_table: pd.DataFrame, target_date:str, actual_date:str):
     '''
-        Add a delay indicator (1: actual_date-target_date > 0; 0: actual_date-target_date <= 0) to the input table and returns the whole table
+        Add a delay indicator (1: actual_date-target_date > 0; 0: actual_date-target_date <= 0) to the input table and returns the entire table
         input:
             input_table(pd.Dataframe) - the table to which the indicator should be added
             target_date(str) - column name of target date in input_table
@@ -192,12 +198,13 @@ def add_delay_indicator(input_table: pd.DataFrame, target_date:str, actual_date:
 
 def drop_irrelevant_data(input_table: pd.DataFrame,target_name:str):
     '''
-        Drop rows of input_table where target is None; set values with frequency < 0.001 per column to None; delete columns with no value or only one distinct value
+        Drop rows of input_table where target is None; set values with frequency < 0.001 per column to None
+        Drop duplicate columns with equal values,   columns with no value or only one distinct value
         input:
             input_table(pd.Dataframe) - the table to which the indicator should be added
             target_name(str) - column name of target
         output:
-            reduced input table without "irrelevant" data
+            cleaned input table
     '''
     input_table_func = input_table.copy()
     # drop all incomplete cases

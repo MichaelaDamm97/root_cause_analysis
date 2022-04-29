@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import numpy as np
 import pandas as pd
-import math
-from pycelonis.celonis_api.pql.pql import PQL, PQLColumn
 from pycelonis.celonis_api.event_collection.data_model import Datamodel
 
-
-
-
+# define features, cat_feautures, features_with_target
 def get_feature_lists(input_table: pd.DataFrame,target_name:str):
-    # define features, cat_feautures, features_with_target
     features = [feat for feat in list(input_table) if feat != target_name]
     cat_features = [feat for feat in features if input_table[feat].dtypes != float]
     num_features = [feat for feat in features if input_table[feat].dtypes == float]
@@ -21,6 +15,10 @@ def get_feature_lists(input_table: pd.DataFrame,target_name:str):
 
 
 def find_max_values(row,amount:int):
+    '''
+        Find the N maximum values of a row
+
+    '''
     max_values = []
     for num in range(amount):
         max_values.append(row[row['MAX'+str(num+1)]])
@@ -29,6 +27,9 @@ def find_max_values(row,amount:int):
 
 
 def concat_max_values(row,amount:int):
+    '''
+        Concatinates the feature names and values to one string
+    '''
     max_concats = []
     for num in range(amount):
         max_concats.append(row['MAX'+str(num+1)] + ' = ' + str(row['MAX'+str(num+1)+'_VALUE']))
@@ -36,9 +37,12 @@ def concat_max_values(row,amount:int):
     return max_concats
 
 
-# Source of the method getDuplicateColumns: ankthon - geeksforgeeks 07/02/2020
-# https://www.geeksforgeeks.org/how-to-find-drop-duplicate-columns-in-a-pandas-dataframe/#:~:text=Code%201%3A%20Find%20duplicate%20columns,in%20the%20duplicate%20column%20set.
 def getDuplicateColumns(df):
+    '''
+        Returns duplicate columns of DataFrame
+        Source of the method getDuplicateColumns: ankthon - geeksforgeeks 07/02/2020
+        https://www.geeksforgeeks.org/how-to-find-drop-duplicate-columns-in-a-pandas-dataframe/#:~:text=Code%201%3A%20Find%20duplicate%20columns,in%20the%20duplicate%20column%20set.
+    '''
     duplicateColumnNames = set()
     for x in range(df.shape[1]):
         col = df.iloc[:, x]
